@@ -29,7 +29,14 @@ The training data are .ply files containing x,y,z coordinates of points within a
 You only need to run the last command for MPEG and Microsoft after selecting PCs into `train/` and `test/` folder:
 
     python  -m utils.ds_pc_octree_blocks datasets/MPEG/10bitdepth/ datasets/MPEG/10bitdepth_2_oct4/ --vg_size 1024 --level 4
+## Create augmented datasets
+We apply data augmentations to our training sets, including rotation, sampling. We provide the sampling and rotating function in utils/ folder. This command rotates the generated blocks 64 from ModelNet and save to a new folder:
+     
+     python3 -m utils.ds_rotation datasets/ModelNet40_200_pc512_oct3/ datasets/ModelNet40_200_pc512_oct3_rt45/ --box 64
+and to sample points from blocks (removing 60% of points randomly):
 
+    python3 -m utils.ds_sampling_points datasets/ModelNet40_200_pc512_oct3/ datasets/ModelNet40_200_pc512_oct3_sp0.6/ -portion 0.6
+     
 The in each dataset folders, there is a original point clouds folder, and 5 folders contain ply for 5 block sizes. `datsets/` folder of MPEG and Microsoft should be like this:
 
     dataset/
@@ -52,6 +59,7 @@ The in each dataset folders, there is a original point clouds folder, and 5 fold
         └── 10bitdepth_2_oct7/
             ├── train/               contains .ply files of 8x8x8 blocks for training 
             └── test/                contains .ply files of 8x8x8 blocks for validation
+        (rotated and sampled folder)
             
     └── MPEGCAT1/
         └── 10bitdepth/              downloaded PCs from MPEG
@@ -73,17 +81,17 @@ The in each dataset folders, there is a original point clouds folder, and 5 fold
 
 
 ## Training
-Run the following command to train block 64:
+Run the following command to train block 64 (remove the augmented dataset for the baseline models):
     
-    python3 -m voxel_dnn_training -blocksize 64 -nfilters 64 -inputmodel Model/voxelDNN/ -outputmodel Model/voxelDNN/ -dataset datasets/ModelNet40_200_pc512_oct3/ -dataset datasets/Microsoft/10bitdepth_2_oct4/ -dataset datasets/MPEG/10bitdepth_2_oct4/  -batch 8 -epochs 50
+    python3 -m voxel_dnn_training -blocksize 64 -nfilters 64 -inputmodel Model/voxelDNN/ -outputmodel Model/voxelDNN/ -dataset datasets/ModelNet40_200_pc512_oct3/ -dataset datasets/Microsoft/10bitdepth_2_oct4/ -dataset datasets/MPEG/10bitdepth_2_oct4/  -dataset datasets/MPEG/10bitdepth_2_oct4_rt45/ -dataset datasets/MPEG/10bitdepth_2_oct4_sp0.6/  -batch 8 -epochs 50
     
 ## Encoder
-Baseline encoding (VoxelDNN) command: 
+You can either use provided models (with data augmentation) in `Model/` folder or train your own models. To encode with baseline + DA setting: 
 
     python3  -m  voxel_dnn_coder.voxel_dnn_abac_multi_res_sepa_model -level 10 -ply TestPC/Microsoft/10bits/phil10/ply/frame0010.ply -depth 10 -output Output/ -model64 Model/voxeldnn64/ -model32 Model/voxeldnn32/  -model16 Model/voxeldnn16/ -model8 Model/voxeldnn8/ -signaling baseline
     
     
-Context extension encoder command:
+Encoder with context extension:
     
     python3  -m  voxel_dnn_coder.voxel_dnn_extend_context2 -level 10 -ply TestPC/Microsoft_phil10_vox10_0010.ply -depth 10 -output Output/ -model128 Model/voxeldnn128/ -model64 Model/voxeldnn64/ -model32 Model/voxeldnn32/  -model16 Model/voxeldnn16/ -model8 Model/voxeldnn8/ -signaling BaselineCE
     
