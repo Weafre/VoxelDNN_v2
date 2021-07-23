@@ -15,3 +15,4 @@ utils/plot.py
 encode2.sh
 encode.sh
 TestPC/*
+Model/*
